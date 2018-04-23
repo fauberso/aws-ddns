@@ -106,6 +106,7 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 			List<ResourceRecord> resourceRecords = new ArrayList<ResourceRecord>();
 			resourceRecords.add(new ResourceRecord(myip));
 			ResourceRecordSet recordSet = new ResourceRecordSet(hostname, RRType.A);
+			recordSet.setTTL(300l);
 			recordSet.setResourceRecords(resourceRecords);
 			List<Change> changes = new ArrayList<Change>();
 			if (oldip == null) {
