@@ -54,7 +54,7 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 
 		log.info(new MapMessage("Query Parameters:", serverlessInput.getQueryStringParameters()));
 		log.info(new MapMessage("Request Headers:", serverlessInput.getHeaders()));
-
+		
 		try {
 			if (serverlessInput.getQueryStringParameters() == null) {
 				throw new Exception("Query string parameter must be provided: " + PARAM_HOSTNAME);
@@ -67,6 +67,8 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 
 			String myip = serverlessInput.getQueryStringParameters().get(PARAM_IP);
 			if (myip == null) {
+				// If no IP address was passed, retrieve the original sender's IP address from
+				// the headers (courtesy of the API gateway)
 				myip = serverlessInput.getHeaders().get("X-Forwarded-For");
 			}
 
@@ -117,7 +119,7 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 			ChangeBatch changeBatch = new ChangeBatch(changes);
 			ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest(
 					HOSTED_ZONE_ID, changeBatch);
-			log.info(changeResourceRecordSetsRequest);
+			log.info("Route53 Request: " + changeResourceRecordSetsRequest.toString());
 			route53.changeResourceRecordSets(changeResourceRecordSetsRequest);
 			output.setBody("good " + myip);
 			output.setStatusCode(200);
