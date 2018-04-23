@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      -
+        Label: 
+          default: "Route53 Configuration"
+        Parameters: 
+          - HostedZoneId
+    ParameterLabels: 
+      HostedZoneId: 
+        default: "Hosted Zone ID"
+        
+Parameters:
+  HostedZoneId:
+    Type: String
+    Description: Zone ID of the Route53 hosted zone in which entries shall be modified (e.g. Z1AB1Z2CDE3FG4, this is NOT the domain name).
+    MinLength: 14
+    MaxLength: 14
+    AllowedPattern: "[A-Z0-9]+" 
+
+Globals:
+  Api:
+    # API Gateway regional endpoints
+    EndpointConfiguration: REGIONAL
+    # Logging, Metrics, Throttling, and all other Stage settings
+    MethodSettings: [{
+        # Turn on Info logging
+        "LoggingLevel": "INFO",
+        # Enable Metrics
+        "MetricsEnabled": True,
+        # Trace-level Logging
+        "DataTraceEnabled": True,
+        # On all Paths & methods
+        "ResourcePath": "/*",
+        "HttpMethod": "*",
+    }]
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # Replace <bucket> with your bucket name
+      CodeUri: target/awsddns-1.0.0.jar
+      Handler: net.auberson.awsddns.function.Update
+      Runtime: java8
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          HOSTED_ZONE_ID: !Ref HostedZoneId
+      Policies: 
+        Statement:
+          - Effect: Allow
+            Action: route53:GetHostedZone
+            Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneId}'
+          - Effect: Allow
+            Action: route53:ChangeResourceRecordSets
+            Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneId}'
+          - Effect: Allow
+            Action: route53:ListResourceRecordSets
+            Resource: !Sub 'arn:aws:route53:::hostedzone/${HostedZoneId}'
+      Events:
+        Call:
+          # eg GET http://username:password@ddns.auberson.net/nic/update?hostname=vpn.auberson.net&myip=188.155.185.27
+          Type: Api
+          Properties:
+            Path: /nic/update
+            Method: ANY

@@ -1,0 +1,7 @@
+/target/
+/dependency-reduced-pom.xml
+/route53-ddns.yaml
+/*.jpage
+.classpath
+.project
+.settings
