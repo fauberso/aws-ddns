@@ -27,7 +27,7 @@ public class MapMessage implements Message {
 		final StringBuilder sb = new StringBuilder(heading).append('\r');
 		for (Map.Entry<String, String> entry : entries.entrySet()) {
 			sb.append(" - ").append(entry.getKey());
-			sb.append(" : ").append(entry.getValue());
+			sb.append(": ").append(entry.getValue());
 			sb.append('\r');
 		}
 		return sb.toString();

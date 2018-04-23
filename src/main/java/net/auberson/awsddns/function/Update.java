@@ -4,7 +4,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,15 +47,11 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 	public ServerlessOutput handleRequest(ServerlessInput serverlessInput, Context context) {
 
 		// Using builder to create the clients could allow us to dynamically load the
-		// region from the AWS_REGION environment
-		// variable. Therefore we can deploy the Lambda functions to different regions
-		// without code change.
+		// region from the AWS_REGION environment variable. This way, we can deploy the
+		// Lambda functions to different regions without code change.
 		AmazonRoute53 route53 = AmazonRoute53ClientBuilder.standard().build();
 		ServerlessOutput output = new ServerlessOutput();
 
-		// logMapEntries("Query Parameters:",
-		// serverlessInput.getQueryStringParameters());
-		// logMapEntries("Request Headers:", serverlessInput.getHeaders());
 		log.info(new MapMessage("Query Parameters:", serverlessInput.getQueryStringParameters()));
 		log.info(new MapMessage("Request Headers:", serverlessInput.getHeaders()));
 
@@ -82,7 +77,6 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 			if (!hostname.endsWith(domainName)) {
 				throw new Exception("Hostname " + hostname + " is not part of domain " + domainName);
 			}
-			// hostname=hostname.substring(0, hostname.indexOf(domainName)-1);
 
 			ListResourceRecordSetsRequest listResourceRecordSetsRequest = new ListResourceRecordSetsRequest(
 					HOSTED_ZONE_ID);
@@ -137,13 +131,4 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 		}
 	}
 
-	private final void logMapEntries(String heading, Map<String, String> entries) {
-		final StringBuilder sb = new StringBuilder(heading).append('\r');
-		for (Map.Entry<String, String> entry : entries.entrySet()) {
-			sb.append(" - ").append(entry.getKey());
-			sb.append(" : ").append(entry.getValue());
-			sb.append('\r');
-		}
-		log.info(sb.toString());
-	}
 }
