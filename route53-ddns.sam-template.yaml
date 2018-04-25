@@ -21,17 +21,16 @@ Parameters:
     MaxLength: 14
     AllowedPattern: "[A-Z0-9]+" 
 
+
 Globals:
   Api:
-    # API Gateway regional endpoints
-    EndpointConfiguration: REGIONAL
     # Logging, Metrics, Throttling, and all other Stage settings
     MethodSettings: [{
         # Turn on Info logging
         "LoggingLevel": "INFO",
-        # Enable Metrics
-        "MetricsEnabled": True,
-        # Trace-level Logging
+        # Enable Detailed CloudWatch Metrics
+        "MetricsEnabled": False,
+        # Log full requests/responses data
         "DataTraceEnabled": True,
         # On all Paths & methods
         "ResourcePath": "/*",
@@ -53,13 +52,14 @@ Resources:
           description: A Route53 and Lambda based implementation of Dynamic DNS
           version: 1.0.0
         securityDefinitions:
-          CustomAuthorizer:
-            type: apiKey
+          DDNSAuthorizer:
+            type: apiKey #basic
             name: Authorization
             in: header
             x-amazon-apigateway-authtype: custom
             x-amazon-apigateway-authorizer:
-              type: token
+              type: request
+              identitySource: method.request.header.Authorization
               authorizerUri:
                 Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DDNSAuthorizerFunction.Arn}/invocations
               authorizerCredentials:
@@ -81,11 +81,16 @@ Resources:
                 description: ip address (defaults to requester's IP address)
                 required: false
                 type: string
+              - name: Authorization
+                in: header
+                description: DDNS Credentials
+                required: false
+                type: string
               responses:
                 '200':
                   description: IP Successfully updated
               security:
-                - CustomAuthorizer: []
+                - DDNSAuthorizer: []
               responses: {}
               
               x-amazon-apigateway-integration:
@@ -114,7 +119,7 @@ Resources:
                   - '/invocations'
               responses:
                 '200':
-                  description: Default response for CORS method
+                  description: Default response
                   headers:
                     Access-Control-Allow-Headers:
                       type: "string"
@@ -122,12 +127,13 @@ Resources:
                       type: "string"
                     Access-Control-Allow-Origin:
                       type: "string"
+        # Request validation
         x-amazon-apigateway-request-validators:
-          ddnsvalidator:
+          DDNSValidator:
             validateRequestBody: false
             validateRequestParameters: true
-        x-amazon-apigateway-request-validator : ddnsvalidator
-        
+        x-amazon-apigateway-request-validator : DDNSValidator
+
   # Main Lambda function: Calls Route53. Users are already authenticated when this is reached.
   DDNSLambdaFunction:
     Type: AWS::Serverless::Function
@@ -172,6 +178,17 @@ Resources:
       Environment:
         Variables:
           HOSTED_ZONE_ID: !Ref HostedZoneId    
+      Policies: 
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: '*'
+          - Effect: Allow
+            Action: logs:CreateLogStream
+            Resource: '*'
+          - Effect: Allow
+            Action: logs:PutLogEvents
+            Resource: '*'
       Role:
         Fn::Sub: ${CustomAuthorizerFunctionRole.Arn}
         
@@ -189,6 +206,9 @@ Resources:
                 - "apigateway.amazonaws.com"
             Action: 
               - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies: 
         - 
           PolicyName: "InvokeAuthorizerFunction"
