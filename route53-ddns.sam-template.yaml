@@ -9,9 +9,19 @@ Metadata:
           default: "Route53 Configuration"
         Parameters: 
           - HostedZoneId
+      -
+        Label: 
+          default: "DDNS Client Configuration"
+        Parameters: 
+          - UserName
+          - Password
     ParameterLabels: 
       HostedZoneId: 
         default: "Hosted Zone ID"
+      UserName: 
+        default: "User Name"
+      Password: 
+        default: "Password"
         
 Parameters:
   HostedZoneId:
@@ -20,8 +30,13 @@ Parameters:
     MinLength: 14
     MaxLength: 14
     AllowedPattern: "[A-Z0-9]+" 
-
-
+  UserName:
+    Type: String
+    Description: The user name against which to check the credentials passed by the DDNS Client. This is the user name you entered in your Router or DDNS Script.
+  Password:
+    Type: String
+    Description: The password against which to check the credentials passed by the DDNS Client.
+    
 Globals:
   Api:
     # Logging, Metrics, Throttling, and all other Stage settings
@@ -53,9 +68,7 @@ Resources:
           version: 1.0.0
         securityDefinitions:
           DDNSAuthorizer:
-            type: apiKey #basic
-            name: Authorization
-            in: header
+            type: basic
             x-amazon-apigateway-authtype: custom
             x-amazon-apigateway-authorizer:
               type: request
@@ -177,7 +190,8 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          HOSTED_ZONE_ID: !Ref HostedZoneId    
+          USERNAME: !Ref UserName    
+          PASSWORD: !Ref Password    
       Policies: 
         Statement:
           - Effect: Allow
@@ -192,6 +206,19 @@ Resources:
       Role:
         Fn::Sub: ${CustomAuthorizerFunctionRole.Arn}
         
+  DDNSAuthorizer: 
+    Type: "AWS::ApiGateway::Authorizer"
+    Properties:
+      Name: DDNSAuthorizer
+      Type: REQUEST
+      IdentitySource: method.request.header.Authorization
+      AuthorizerUri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DDNSAuthorizerFunction.Arn}/invocations
+      AuthorizerCredentials:
+        Fn::Sub: ${ApiGatewayAuthorizerRole.Arn}
+      AuthorizerResultTtlInSeconds: 60 
+      RestApiId: !Ref ApiGateway
+
   # Custom role used by the API Gateway to access the Authorizer Lambda function
   ApiGatewayAuthorizerRole:
     Type: AWS::IAM::Role

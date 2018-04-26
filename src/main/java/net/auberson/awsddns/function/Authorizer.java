@@ -46,10 +46,22 @@ public class Authorizer implements RequestHandler<ServerlessInput, AuthPolicy> {
 			output.setPolicyDocument(AuthPolicy.PolicyDocument.getDenyAllPolicy(REGION, ctx.getAccountId(), ctx.getApiId(), ctx.getStage()));
 			return output;
 		}
+
+		authorization = authorization.trim();
 		
-		if (!authorization.contains(":")) {
-			authorization = Base64.decode(authorization).toString();
+		if (!authorization.startsWith("Basic ")) {			
+			log.error("Authentication data is not a valid Basic HTTP Authentication header: "+authorization);
+			output.setPolicyDocument(AuthPolicy.PolicyDocument.getDenyAllPolicy(REGION, ctx.getAccountId(), ctx.getApiId(), ctx.getStage()));
+			return output;
 		}
+		
+	    try {
+	    		authorization = new String(Base64.decode(authorization.substring(6)));
+	    } catch (IllegalArgumentException iae) {
+			log.error("Authentication data is not a Base64 encoded: "+authorization);
+			output.setPolicyDocument(AuthPolicy.PolicyDocument.getDenyAllPolicy(REGION, ctx.getAccountId(), ctx.getApiId(), ctx.getStage()));
+			return output;
+	    }
 		
 		credentials=authorization.split(":");
 		
