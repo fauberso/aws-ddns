@@ -109,8 +109,6 @@ Resources:
               x-amazon-apigateway-integration:
                 type: aws
                 responses:
-                  .error: 
-                    statusCode: '400'
                   default:
                     statusCode: '200'
                     responseParameters:
@@ -132,7 +130,6 @@ Resources:
                   - ':function:'
                   - !Ref DDNSLambdaFunction
                   - '/invocations'
-
               responses:
                 '200':
                   description: Default response
@@ -251,8 +248,7 @@ Resources:
                   - lambda:InvokeAsync
                   - lambda:InvokeFunction
                 Resource:
-                  - Fn::Sub: ${DDNSLambdaFunction.Arn}
-                  - Fn::Sub: ${DDNSAuthorizerFunction.Arn}
+                  Fn::Sub: ${DDNSAuthorizerFunction.Arn}
                   
   # Custom role used by the Authorizer Lambda function (add policies here if the Authorizer needs to access resources)
   CustomAuthorizerFunctionRole:
