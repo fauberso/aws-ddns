@@ -57,7 +57,7 @@ public class Update implements RequestHandler<ServerlessInput, ServerlessOutput>
 		
 		try {
 			if (serverlessInput.getQueryStringParameters() == null) {
-				throw new Exception("Query string parameter must be provided: " + PARAM_HOSTNAME);
+				throw new Exception("No parameters. Query string parameter must be provided: " + PARAM_HOSTNAME);
 			}
 
 			String hostname = serverlessInput.getQueryStringParameters().get(PARAM_HOSTNAME);

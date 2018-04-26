@@ -25,6 +25,12 @@ public class MapMessage implements Message {
 	@Override
 	public String getFormattedMessage() {
 		final StringBuilder sb = new StringBuilder(heading).append('\r');
+		if (entries==null) {
+			return sb.append("<null>").toString();
+		}
+		if (entries.isEmpty()) {
+			return sb.append("<empty>").toString();
+		}
 		for (Map.Entry<String, String> entry : entries.entrySet()) {
 			sb.append(" - ").append(entry.getKey());
 			sb.append(": ").append(entry.getValue());
